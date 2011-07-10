@@ -45,7 +45,7 @@ processOne ((Owes personA amount personB), nonMatchingDebts) (Owes pA am pB) =
 processAll :: [Owes] -> [Owes]
 processAll [] = []
 processAll (d:ds) = let (e, es) = (foldl processOne (d, []) ds) in
-    e : (processAll' es)
+    e : (processAll es)
 
 -- if the amount of a debt is negative, flip the two persons and invert the amount
 flipDebt :: Owes -> Owes
