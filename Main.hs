@@ -18,15 +18,17 @@ input =
 -- end of configuration: leave the rest as it is
 
 -- Input: payer, amount, receivers
-data PayedFor = PayedFor Person Double [Person]
+data PayedFor = PayedFor Person Rational [Person]
     deriving Show
 
 -- Output: the first person owes an amount to the second person
-data Owes = Owes Person Double Person
+data Owes = Owes Person Rational Person
 
 instance Show Owes where
     show (Owes pA amount pB) =
-        " " ++ (show pA) ++ " owes " ++ (show amount) ++ " to " ++ (show pB) ++ "\n"
+        " " ++ (show pA) ++ " owes "
+            ++ (show $ ((fromRational amount)::Double))
+            ++ " to " ++ (show pB) ++ "\n"
 
 -- turns a payment into a list of debts
 pays2owes :: PayedFor -> [Owes]
