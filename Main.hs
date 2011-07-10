@@ -60,4 +60,4 @@ flipDebt (Owes pA amount pB) =
         else (Owes pA amount pB)
 
 main = do
-    print $ map flipDebt $ processAll allDebts
+    print $ map flipDebt $ filter (\(Owes a _ b) -> a /= b) $ processAll allDebts
