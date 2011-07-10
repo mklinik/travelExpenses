@@ -9,7 +9,7 @@ module Main where
 data Person = Hans | Klaus | Erna | Elke
     deriving (Show, Eq)
 
-database =
+input =
     [ PayedFor Hans 500 [Klaus]
     , PayedFor Klaus 510 [Hans]
     , PayedFor Hans 10 [Erna, Elke]
@@ -17,11 +17,11 @@ database =
 
 -- end of configuration: leave the rest as it is
 
--- payer, amount, receivers
+-- Input: payer, amount, receivers
 data PayedFor = PayedFor Person Double [Person]
     deriving Show
 
--- the first person owes an amount to the second person
+-- Output: the first person owes an amount to the second person
 data Owes = Owes Person Double Person
     deriving Show
 
@@ -31,25 +31,21 @@ pays2owes (PayedFor payer amount receivers) =
     [Owes receiver fraction payer | receiver <- receivers]
         where fraction = amount / (fromIntegral $ length receivers)
 
-allDebts = concatMap pays2owes database
+allDebts = concatMap pays2owes input
 
--- Takes a debt x and a list of debts ds.
--- For each debt in ds: check if the two persons match the two persons in x,
--- and update x accordingly.
--- Returns the updated debt with all debts of ds absorbed into x, and the rest
--- list which contains no more debts between the two persons of x.
-processOne :: Owes -> [Owes] -> (Owes, [Owes])
-processOne x [] = (x, [])
-processOne (Owes personA amount personB) ((Owes pA am pB):ds) =
-         if( personA == pA && personB == pB ) then processOne (Owes personA (amount + am) personB) ds
-    else if( personA == pB && personB == pA ) then processOne (Owes personA (amount - am) personB) ds
-    else (updatedDebt, (Owes pA am pB):rest)
-        where (updatedDebt, rest) = processOne (Owes personA amount personB) ds
+-- processOne (x, nonMatchingDebts) d
+-- If the people of x and d match, absorb d into x
+-- else add it to the list of nonMatchingDebts
+processOne :: (Owes, [Owes]) -> Owes -> (Owes, [Owes])
+processOne ((Owes personA amount personB), nonMatchingDebts) (Owes pA am pB) =
+         if( personA == pA && personB == pB ) then ((Owes personA (amount + am) personB), nonMatchingDebts)
+    else if( personA == pB && personB == pA ) then ((Owes personA (amount - am) personB), nonMatchingDebts)
+    else ((Owes personA amount personB), (Owes pA am pB):nonMatchingDebts)
 
 processAll :: [Owes] -> [Owes]
 processAll [] = []
-processAll (d:ds) = updatedDebt : (processAll rest)
-    where (updatedDebt, rest) = processOne d ds
+processAll (d:ds) = let (e, es) = (foldl processOne (d, []) ds) in
+    e : (processAll' es)
 
 -- if the amount of a debt is negative, flip the two persons and invert the amount
 flipDebt :: Owes -> Owes
@@ -59,4 +55,4 @@ flipDebt (Owes pA amount pB) =
         else (Owes pA amount pB)
 
 main = do
-    putStrLn $ show $ map flipDebt $ processAll allDebts
+    print $ map flipDebt $ processAll allDebts
