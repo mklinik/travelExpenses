@@ -23,7 +23,10 @@ data PayedFor = PayedFor Person Double [Person]
 
 -- Output: the first person owes an amount to the second person
 data Owes = Owes Person Double Person
-    deriving Show
+
+instance Show Owes where
+    show (Owes pA amount pB) =
+        " " ++ (show pA) ++ " owes " ++ (show amount) ++ " to " ++ (show pB) ++ "\n"
 
 -- turns a payment into a list of debts
 pays2owes :: PayedFor -> [Owes]
