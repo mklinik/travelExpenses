@@ -26,9 +26,9 @@ data Owes = Owes Person Rational Person
 
 instance Show Owes where
     show (Owes pA amount pB) =
-        " " ++ (show pA) ++ " owes "
-            ++ (show $ ((fromRational amount)::Double))
-            ++ " to " ++ (show pB) ++ "\n"
+           (show pA) ++ " owes "
+        ++ (show $ ((fromRational amount)::Double))
+        ++ " to " ++ (show pB)
 
 -- turns a payment into a list of debts
 pays2owes :: PayedFor -> [Owes]
@@ -60,4 +60,4 @@ flipDebt (Owes pA amount pB) =
         else (Owes pA amount pB)
 
 main = do
-    print $ map flipDebt $ filter (\(Owes a _ b) -> a /= b) $ processAll allDebts
+    mapM_ print $ map flipDebt $ filter (\(Owes a _ b) -> a /= b) $ processAll allDebts
