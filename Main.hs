@@ -7,7 +7,7 @@ module Main where
 -- configuration: edit here
 
 data Person = Hans | Klaus | Erna | Elke
-    deriving (Show, Eq)
+    deriving (Show, Eq, Enum, Bounded)
 
 input =
     [ PayedFor Hans 500 [Klaus]
@@ -23,6 +23,7 @@ data PayedFor = PayedFor Person Rational [Person]
 
 -- Output: the first person owes an amount to the second person
 data Owes = Owes Person Rational Person
+    deriving Eq
 
 instance Show Owes where
     show (Owes pA amount pB) =
@@ -36,7 +37,7 @@ pays2owes (PayedFor payer amount receivers) =
     [Owes receiver fraction payer | receiver <- receivers]
         where fraction = amount / (fromIntegral $ length receivers)
 
-allDebts = concatMap pays2owes input
+allDebts = concatMap pays2owes
 
 -- processOne (x, nonMatchingDebts) d
 -- If the people of x and d match, absorb d into x
@@ -60,4 +61,4 @@ flipDebt (Owes pA amount pB) =
         else (Owes pA amount pB)
 
 main = do
-    mapM_ print $ map flipDebt $ filter (\(Owes a _ b) -> a /= b) $ processAll allDebts
+    mapM_ print $ map flipDebt $ filter (\(Owes a _ b) -> a /= b) $ processAll $ allDebts input
