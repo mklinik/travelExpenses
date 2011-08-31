@@ -43,10 +43,10 @@ allDebts = concatMap pays2owes
 -- If the people of x and d match, absorb d into x
 -- else add it to the list of nonMatchingDebts
 processOne :: (Owes, [Owes]) -> Owes -> (Owes, [Owes])
-processOne ((Owes personA amount personB), nonMatchingDebts) (Owes pA am pB) =
-         if( personA == pA && personB == pB ) then ((Owes personA (amount + am) personB), nonMatchingDebts)
-    else if( personA == pB && personB == pA ) then ((Owes personA (amount - am) personB), nonMatchingDebts)
-    else ((Owes personA amount personB), (Owes pA am pB):nonMatchingDebts)
+processOne (x@(Owes personA amount personB), nonMatchingDebts) d@(Owes pA am pB)
+    | personA == pA && personB == pB = ((Owes personA (amount + am) personB), nonMatchingDebts)
+    | personA == pB && personB == pA = ((Owes personA (amount - am) personB), nonMatchingDebts)
+    | otherwise                      = (x, d:nonMatchingDebts)
 
 processAll :: [Owes] -> [Owes]
 processAll [] = []
