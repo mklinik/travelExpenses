@@ -10,7 +10,7 @@ import Test.Framework.Providers.QuickCheck2
 
 import qualified Data.List as List
 
-import Main
+import Main hiding (main)
 
 payedForAmount (PayedFor _ am _) = am
 
