@@ -10,15 +10,17 @@ data Person = Hans | Klaus | Erna | Elke
     deriving (Show, Eq, Enum, Bounded)
 
 input =
-    [ PayedFor Hans 500 [Klaus]
-    , PayedFor Klaus 510 [Hans]
-    , PayedFor Hans 10 [Erna, Elke]
+    [ Hans  `PayedFor` [Klaus]      € 500
+    , Klaus `PayedFor` [Hans]       € 510
+    , Hans  `PayedFor` [Erna, Elke] € 10
     ]
 
 -- end of configuration: leave the rest as it is
 
+(€) = ($)
+
 -- Input: payer, amount, receivers
-data PayedFor = PayedFor Person Rational [Person]
+data PayedFor = PayedFor Person [Person] Rational
     deriving Show
 
 -- Output: the first person owes an amount to the second person
@@ -33,7 +35,7 @@ instance Show Owes where
 
 -- turns a payment into a list of debts
 pays2owes :: PayedFor -> [Owes]
-pays2owes (PayedFor payer amount receivers) =
+pays2owes (PayedFor payer receivers amount) =
     [Owes receiver fraction payer | receiver <- receivers]
         where fraction = amount / (fromIntegral $ length receivers)
 
