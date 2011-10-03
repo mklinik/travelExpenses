@@ -4,6 +4,8 @@
 
 module Main where
 
+import Text.Printf
+
 -- configuration: edit here
 
 data Person = Hans | Klaus | Erna | Elke
@@ -30,7 +32,7 @@ data Owes = Owes Person Rational Person
 instance Show Owes where
     show (Owes pA amount pB) =
            (show pA) ++ " owes "
-        ++ (show $ ((fromRational amount)::Double))
+        ++ (printf "%.2f" ((fromRational amount)::Double))
         ++ " to " ++ (show pB)
 
 -- turns a payment into a list of debts
