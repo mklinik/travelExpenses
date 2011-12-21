@@ -5,11 +5,12 @@
 module Main where
 
 import Text.Printf
+import Data.List (sort)
 
 -- configuration: edit here
 
 data Person = Hans | Klaus | Erna | Elke
-    deriving (Show, Eq, Enum, Bounded)
+    deriving (Show, Eq, Enum, Bounded, Ord)
 
 input =
     [ Hans  `Payed` 500 `for` [Klaus]
@@ -27,7 +28,7 @@ data PayedFor = Payed Person Rational [Person]
 
 -- Output: the first person owes an amount to the second person
 data Owes = Owes Person Rational Person
-    deriving Eq
+    deriving (Eq, Ord)
 
 instance Show Owes where
     show (Owes pA amount pB) =
@@ -65,4 +66,4 @@ flipDebt (Owes pA amount pB) =
         else (Owes pA amount pB)
 
 main = do
-    mapM_ print $ map flipDebt $ filter (\(Owes a _ b) -> a /= b) $ processAll $ allDebts input
+    mapM_ print $ sort $ map flipDebt $ filter (\(Owes a _ b) -> a /= b) $ processAll $ allDebts input
