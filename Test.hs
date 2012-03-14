@@ -34,5 +34,11 @@ case_oneReceiver = ((Owes Klaus 200 Hans) `elem` (allDebts [(Payed Hans 200 [Kla
 case_twoReceivers = ((Owes Klaus 100 Hans) `elem` (allDebts [(Payed Hans 200 [Klaus, Hans])])) @=? True
 case_threeReceivers = ((Owes Klaus 100 Hans) `elem` (allDebts [(Payed Hans 300 [Klaus, Hans, Elke])])) @=? True
 case_fourReceivers = ((Owes Klaus 50 Hans) `elem` (allDebts [(Payed Hans 200 [Klaus, Hans, Elke, Erna])])) @=? True
+case_everythingEven = (null $ processAll $ allDebts
+  [ (Payed Hans 100 [Klaus])
+  , (Payed Klaus 100 [Erna])
+  , (Payed Erna 100 [Elke])
+  , (Payed Elke 100 [Hans])
+  ]) @=? True
 
 main = $(defaultMainGenerator)

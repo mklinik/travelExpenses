@@ -44,26 +44,47 @@ pays2owes (Payed payer amount receivers) =
 
 allDebts = concatMap pays2owes
 
--- processOne (x, nonMatchingDebts) d
--- If the people of x and d match, absorb d into x
--- else add it to the list of nonMatchingDebts
-processOne :: (Owes, [Owes]) -> Owes -> (Owes, [Owes])
-processOne (x@(Owes personA amount personB), nonMatchingDebts) d@(Owes pA am pB)
-    | personA == pA && personB == pB = ((Owes personA (amount + am) personB), nonMatchingDebts)
-    | personA == pB && personB == pA = ((Owes personA (amount - am) personB), nonMatchingDebts)
-    | otherwise                      = (x, d:nonMatchingDebts)
-
+-- use the first Element of the list to make a simplification
+-- if possible simplify again otherwise simplify the remaining list
 processAll :: [Owes] -> [Owes]
 processAll [] = []
-processAll (d:ds) = let (e, es) = (foldl processOne (d, []) ds) in
-    e : (processAll es)
+processAll (x:xs) =
+    case processOne (x,xs) of
+      -- x was used in a simplification
+      (True,ys) -> processAll ys
+       -- x cannot be used in a simplification
+      (False,ys) ->  x : processAll ys
 
--- if the amount of a debt is negative, flip the two persons and invert the amount
-flipDebt :: Owes -> Owes
-flipDebt (Owes pA amount pB) =
-    if( amount < 0 )
-        then (Owes pB (-amount) pA)
-        else (Owes pA amount pB)
+-- argument consits of fixed element which should be used in a simplification
+-- and a list of the remaining elements
+-- returns (True, simplified list) if simplification is possible and
+-- (False, original list) otherwise
+processOne :: (Owes, [Owes]) -> (Bool,[Owes])
+processOne (x@(Owes pA amnt pB),xs)
+    -- in this case we can just discard x
+    | pA == pB || amnt == 0 = (True,xs)
+    | xs == [] = (False,[])
+    | otherwise = processHelper xs
+              -- recurse of the remaining elements to find elements where simpfication is possible
+        where processHelper [] = (False,[])
+              processHelper (y@(Owes pC amnt' pD):ys)
+                    -- both persons equal - when just add the dept
+                  | pA == pC && pB == pD = (True,(Owes pA (amnt + amnt') pB):ys)
+                    -- if person A owes x to B and B owes y to C then
+                    -- person A owes (min x y) to C and either A owes |x-y| To B or B owes |x-y| to C
+                  | pB == pC = (True,combine x y ++ ys)
+                  | pD == pA = (True,combine y x ++ ys)
+                  | otherwise = let (b,l) = processHelper ys in
+                                (b,y:l)
+                        -- assumes pB == pC
+                  where combine (Owes pA amnt pB) (Owes pC amnt' pD) =
+                            if amnt == amnt' then
+                                [Owes pA amnt pD]
+                            else if amnt < amnt' then
+                                     [(Owes pA (min amnt amnt') pD),(Owes pC (amnt'-amnt) pD)]
+                                 else
+                                     [(Owes pA (min amnt amnt') pD),(Owes pA (amnt-amnt') pB)]
+
 
 main = do
-    mapM_ print $ sort $ map flipDebt $ filter (\(Owes a _ b) -> a /= b) $ processAll $ allDebts input
+    mapM_ print $ sort $ processAll $ allDebts input
