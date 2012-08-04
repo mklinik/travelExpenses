@@ -20,6 +20,9 @@ input =
 
 -- end of configuration: leave the rest as it is
 
+everybody :: [Person]
+everybody = [minBound .. maxBound]
+
 for = ($)
 
 -- Input: payer, amount, receivers
