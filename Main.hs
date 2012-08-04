@@ -47,11 +47,13 @@ pays2owes (Payed payer amount receivers) =
 
 allDebts = concatMap pays2owes
 
+processAll = processAll' . map normalize
+
 -- use the first Element of the list to make a simplification
 -- if possible simplify again otherwise simplify the remaining list
-processAll :: [Owes] -> [Owes]
-processAll [] = []
-processAll (x:xs) =
+processAll' :: [Owes] -> [Owes]
+processAll' [] = []
+processAll' (x:xs) =
     case processOne (x,xs) of
       -- x was used in a simplification
       (True,ys) -> processAll ys
@@ -88,6 +90,10 @@ processOne (x@(Owes pA amnt pB),xs)
                                  else
                                      [(Owes pA (min amnt amnt') pD),(Owes pA (amnt-amnt') pB)]
 
+normalize :: Owes -> Owes
+normalize x@(Owes personA amount personB)
+  | amount < 0 = (Owes personB (-amount) personA)
+  | otherwise  = x
 
 main = do
     mapM_ print $ sort $ processAll $ allDebts input

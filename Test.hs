@@ -9,6 +9,7 @@ import Test.Framework.Providers.HUnit
 import Test.Framework.Providers.QuickCheck2
 
 import qualified Data.List as List
+import qualified Data.Set as Set
 
 import Main hiding (main)
 
@@ -40,5 +41,34 @@ case_everythingEven = (null $ processAll $ allDebts
   , (Payed Erna 100 [Elke])
   , (Payed Elke 100 [Hans])
   ]) @=? True
+
+case_negativeAmount = Set.fromList expected @=? Set.fromList result
+  where result = processAll $ allDebts [ (Payed Hans (-30) [Klaus, Erna, Elke]) ]
+        expected =
+          [ (Owes Hans 10 Klaus)
+          , (Owes Hans 10 Erna)
+          , (Owes Hans 10 Elke)
+          ]
+
+case_negativeAndPositiveAmount = Set.fromList expected @=? Set.fromList result
+  where result = processAll $ allDebts
+          [ Payed Hans (-30) [Klaus, Erna, Elke]
+          , Payed Erna 10 [Hans]
+          ]
+        expected =
+          [ Owes Hans 10 Klaus
+          , Owes Hans 10 Elke
+          , Owes Hans 20 Erna
+          ]
+
+case_negativeAndPositiveAmount2 = Set.fromList expected @=? Set.fromList result
+  where result = processAll $ allDebts
+          [ Payed Hans (-30) [Klaus, Erna, Elke]
+          , Payed Hans 10 [Erna]
+          ]
+        expected =
+          [ Owes Hans 10 Klaus
+          , Owes Hans 10 Elke
+          ]
 
 main = $(defaultMainGenerator)
