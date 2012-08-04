@@ -71,4 +71,14 @@ case_negativeAndPositiveAmount2 = Set.fromList expected @=? Set.fromList result
           , Owes Hans 10 Elke
           ]
 
+-- the case
+--   [ Hans owes Erna
+--   , ...
+--   , Hans owes Erna
+--   ]
+-- does not occur
+prop_eachPairOfPersonsAppearsOnlyOnce expenses = length result == (Set.size $ Set.fromList $ map personsOnly result)
+  where result = processAll $ allDebts expenses
+        personsOnly (Owes p1 _ p2) = (p1, p2)
+
 main = $(defaultMainGenerator)
