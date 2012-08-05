@@ -13,9 +13,6 @@ import qualified Data.Set as Set
 
 import Main hiding (main)
 
-payedForAmount (Payed _ am _) = am
-
-
 instance Arbitrary Person where
     arbitrary = elements [minBound .. maxBound]
 
@@ -26,16 +23,11 @@ instance Arbitrary PayedFor where
         receivers <- elements $ tail $ List.subsequences [minBound .. maxBound]
         return (Payed payer amount receivers)
 
-sumDebts = sum . (map (\(Owes _ amount _) -> amount))
-sumExpenses = sum . (map (\(Payed _ amount _) -> amount))
-
-prop_sumOfOneExpense expense = (payedForAmount expense) == (sumDebts $ pays2owes expense)
-prop_sumOfLotsExpenses expenses = (sumExpenses expenses) == (sumDebts $ allDebts expenses)
-case_oneReceiver = ((Owes Klaus 200 Hans) `elem` (allDebts [(Payed Hans 200 [Klaus])])) @=? True
-case_twoReceivers = ((Owes Klaus 100 Hans) `elem` (allDebts [(Payed Hans 200 [Klaus, Hans])])) @=? True
-case_threeReceivers = ((Owes Klaus 100 Hans) `elem` (allDebts [(Payed Hans 300 [Klaus, Hans, Elke])])) @=? True
-case_fourReceivers = ((Owes Klaus 50 Hans) `elem` (allDebts [(Payed Hans 200 [Klaus, Hans, Elke, Erna])])) @=? True
-case_everythingEven = (null $ processAll $ allDebts
+case_oneReceiver = ((Owes Klaus 200 Hans) `elem` (processAll [(Payed Hans 200 [Klaus])])) @=? True
+case_twoReceivers = ((Owes Klaus 100 Hans) `elem` (processAll [(Payed Hans 200 [Klaus, Hans])])) @=? True
+case_threeReceivers = ((Owes Klaus 100 Hans) `elem` (processAll [(Payed Hans 300 [Klaus, Hans, Elke])])) @=? True
+case_fourReceivers = ((Owes Klaus 50 Hans) `elem` (processAll [(Payed Hans 200 [Klaus, Hans, Elke, Erna])])) @=? True
+case_everythingEven = (null $ processAll
   [ (Payed Hans 100 [Klaus])
   , (Payed Klaus 100 [Erna])
   , (Payed Erna 100 [Elke])
@@ -43,7 +35,7 @@ case_everythingEven = (null $ processAll $ allDebts
   ]) @=? True
 
 case_negativeAmount = Set.fromList expected @=? Set.fromList result
-  where result = processAll $ allDebts [ (Payed Hans (-30) [Klaus, Erna, Elke]) ]
+  where result = processAll [ (Payed Hans (-30) [Klaus, Erna, Elke]) ]
         expected =
           [ (Owes Hans 10 Klaus)
           , (Owes Hans 10 Erna)
@@ -51,7 +43,7 @@ case_negativeAmount = Set.fromList expected @=? Set.fromList result
           ]
 
 case_negativeAndPositiveAmount = Set.fromList expected @=? Set.fromList result
-  where result = processAll $ allDebts
+  where result = processAll
           [ Payed Hans (-30) [Klaus, Erna, Elke]
           , Payed Erna 10 [Hans]
           ]
@@ -62,7 +54,7 @@ case_negativeAndPositiveAmount = Set.fromList expected @=? Set.fromList result
           ]
 
 case_negativeAndPositiveAmount2 = Set.fromList expected @=? Set.fromList result
-  where result = processAll $ allDebts
+  where result = processAll
           [ Payed Hans (-30) [Klaus, Erna, Elke]
           , Payed Hans 10 [Erna]
           ]
@@ -78,7 +70,11 @@ case_negativeAndPositiveAmount2 = Set.fromList expected @=? Set.fromList result
 --   ]
 -- does not occur
 prop_eachPairOfPersonsAppearsOnlyOnce expenses = length result == (Set.size $ Set.fromList $ map personsOnly result)
-  where result = processAll $ allDebts expenses
+  where result = processAll expenses
         personsOnly (Owes p1 _ p2) = (p1, p2)
+
+prop_allResultAmountsArePositive expenses = all (> 0) $ map amountOnly result
+  where result = processAll expenses
+        amountOnly (Owes _ amount _) = amount
 
 main = $(defaultMainGenerator)

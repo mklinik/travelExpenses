@@ -39,61 +39,61 @@ instance Show Owes where
         ++ (printf "%.2f" ((fromRational amount)::Double))
         ++ " to " ++ (show pB)
 
--- turns a payment into a list of debts
-pays2owes :: PayedFor -> [Owes]
-pays2owes (Payed payer amount receivers) =
-    [Owes receiver fraction payer | receiver <- receivers]
-        where fraction = amount / (fromIntegral $ length receivers)
+newtype Account = Account (Person, Rational)
+  deriving (Eq, Show)
 
-allDebts = concatMap pays2owes
+instance Ord Account where
+  Account a <= Account b = snd a <= snd b
 
-processAll = processAll' . map normalize
+type Bank = [Account]
 
--- use the first Element of the list to make a simplification
--- if possible simplify again otherwise simplify the remaining list
-processAll' :: [Owes] -> [Owes]
-processAll' [] = []
-processAll' (x:xs) =
-    case processOne (x,xs) of
-      -- x was used in a simplification
-      (True,ys) -> processAll ys
-       -- x cannot be used in a simplification
-      (False,ys) ->  x : processAll ys
+payed2bank :: PayedFor -> Bank -> Bank
+payed2bank (Payed source amount sinks) bank = foldl (flip $ transfer source part) bank sinks
+  where part = amount / fromIntegral (length sinks)
 
--- argument consits of fixed element which should be used in a simplification
--- and a list of the remaining elements
--- returns (True, simplified list) if simplification is possible and
--- (False, original list) otherwise
-processOne :: (Owes, [Owes]) -> (Bool,[Owes])
-processOne (x@(Owes pA amnt pB),xs)
-    -- in this case we can just discard x
-    | pA == pB || amnt == 0 = (True,xs)
-    | xs == [] = (False,[])
-    | otherwise = processHelper xs
-              -- recurse of the remaining elements to find elements where simpfication is possible
-        where processHelper [] = (False,[])
-              processHelper (y@(Owes pC amnt' pD):ys)
-                    -- both persons equal - when just add the dept
-                  | pA == pC && pB == pD = (True,(Owes pA (amnt + amnt') pB):ys)
-                    -- if person A owes x to B and B owes y to C then
-                    -- person A owes (min x y) to C and either A owes |x-y| To B or B owes |x-y| to C
-                  | pB == pC = (True,combine x y ++ ys)
-                  | pD == pA = (True,combine y x ++ ys)
-                  | otherwise = let (b,l) = processHelper ys in
-                                (b,y:l)
-                        -- assumes pB == pC
-                  where combine (Owes pA amnt pB) (Owes pC amnt' pD) =
-                            if amnt == amnt' then
-                                [Owes pA amnt pD]
-                            else if amnt < amnt' then
-                                     [(Owes pA (min amnt amnt') pD),(Owes pC (amnt'-amnt) pD)]
-                                 else
-                                     [(Owes pA (min amnt amnt') pD),(Owes pA (amnt-amnt') pB)]
+payeds2bank :: [PayedFor] -> Bank
+payeds2bank = foldl (flip payed2bank) []
 
-normalize :: Owes -> Owes
-normalize x@(Owes personA amount personB)
-  | amount < 0 = (Owes personB (-amount) personA)
-  | otherwise  = x
+-- given a list of accounts, transfer `amount` from `source` to `sink` and create new accounts as neccesary
+transfer :: Person -> Rational -> Person -> Bank -> Bank
+transfer source amount sink = withdraw source amount . deposit sink amount
 
-main = do
-    mapM_ print $ sort $ processAll $ allDebts input
+-- remove `amount` from `person`s account, create account if neccesary
+withdraw :: Person -> Rational -> Bank -> Bank
+withdraw person amount = updateBank person (\a -> a - amount)
+
+-- add `amount` to `person`s account, create account if necessary
+deposit :: Person -> Rational -> Bank -> Bank
+deposit person amount = updateBank person (+ amount)
+
+-- update `person`s account with `updateFunction`, create account if necessary
+updateBank :: Person -> (Rational -> Rational) -> Bank -> Bank
+updateBank person updateFunction [] = [Account (person, updateFunction 0)]
+updateBank person updateFunction (Account (curPerson, balance):rest) =
+  if curPerson == person then
+    Account (person, updateFunction balance):rest
+  else
+    Account (curPerson, balance) : updateBank person updateFunction rest
+
+discardEmptyAccounts :: Bank -> Bank
+discardEmptyAccounts = filter (\(Account (_, balance)) -> balance /= 0)
+
+clearAll :: Bank -> [Owes]
+clearAll bank = debts
+  where (debts, _) = clearAll_ ([], bank)
+        clearAll_ x@(debts, []) = x
+        clearAll_ x             = clearAll_ $ clearOne x
+
+clearOne :: ([Owes], Bank) -> ([Owes], Bank)
+clearOne (debts, bankIn) = if null bank then (debts, bank) else (debt:debts, discardEmptyAccounts bank_)
+  where bank   = discardEmptyAccounts bankIn
+        Account (richestPerson, richestBalance) = maximum bank
+        Account (poorestPerson, poorestBalance) = minimum bank
+        amount = min (abs richestBalance) (abs poorestBalance)
+        debt   = Owes richestPerson amount poorestPerson
+        bank_  = transfer richestPerson amount poorestPerson bank
+
+processAll :: [PayedFor] -> [Owes]
+processAll = clearAll . payeds2bank
+
+main = mapM_ print $ sort $ processAll input
