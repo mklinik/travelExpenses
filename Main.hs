@@ -9,7 +9,7 @@ import Data.List (sort)
 
 -- configuration: edit here
 
-data Person = Hans | Klaus | Erna | Elke
+data Person = Hans | Klaus | Erna | Elke | Peter
     deriving (Show, Eq, Enum, Bounded, Ord)
 
 input =
@@ -82,7 +82,30 @@ clearAll :: Bank -> [Owes]
 clearAll bank = debts
   where (debts, _) = clearAll_ ([], bank)
         clearAll_ x@(debts, []) = x
-        clearAll_ x             = clearAll_ $ clearOne x
+        clearAll_ x             = clearAll_ $ clearOne $ clearEqualPairs x
+
+pairs [] = []
+pairs (x:xs) = [(x, y) | y <- xs] ++ (pairs xs)
+
+-- all account pairs where one amount is equal to the inverse of the other
+equalPairs = filter (\(Account (p1, b1), Account (p2, b2)) -> b1 == (-b2)) . pairs
+
+clearEqualPairs :: ([Owes], Bank) -> ([Owes], Bank)
+clearEqualParis x@(_, []) = x
+clearEqualPairs (debts, bank) = (debts_, bank_)
+  where
+    (debts_, bank_) = foldl clearEqualPair (debts, bank) $ equalPairs bank
+
+-- precondition: the balances of both accounts is equal
+clearEqualPair :: ([Owes], Bank) -> (Account, Account) -> ([Owes], Bank)
+clearEqualPair (debts, bank) (Account (person1, balance1), Account (person2, _)) = (debt:debts, bank_)
+  where
+    (sourcePerson, sinkPerson, amount) =
+      if balance1 > 0
+        then (person1, person2,  balance1)
+        else (person2, person1, -balance1)
+    debt = Owes sourcePerson amount sinkPerson
+    bank_ = transfer sourcePerson amount sinkPerson bank
 
 clearOne :: ([Owes], Bank) -> ([Owes], Bank)
 clearOne (debts, bankIn) = if null bank then (debts, bank) else (debt:debts, bank_)
