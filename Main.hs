@@ -71,9 +71,9 @@ updateBank :: Person -> (Rational -> Rational) -> Bank -> Bank
 updateBank person updateFunction [] = [Account (person, updateFunction 0)]
 updateBank person updateFunction (Account (curPerson, balance):rest) =
   if curPerson == person then
-    Account (person, updateFunction balance):rest
+    discardEmptyAccounts $ Account (person, updateFunction balance):rest
   else
-    Account (curPerson, balance) : updateBank person updateFunction rest
+    discardEmptyAccounts $ Account (curPerson, balance) : updateBank person updateFunction rest
 
 discardEmptyAccounts :: Bank -> Bank
 discardEmptyAccounts = filter (\(Account (_, balance)) -> balance /= 0)
@@ -85,8 +85,8 @@ clearAll bank = debts
         clearAll_ x             = clearAll_ $ clearOne x
 
 clearOne :: ([Owes], Bank) -> ([Owes], Bank)
-clearOne (debts, bankIn) = if null bank then (debts, bank) else (debt:debts, discardEmptyAccounts bank_)
-  where bank   = discardEmptyAccounts bankIn
+clearOne (debts, bankIn) = if null bank then (debts, bank) else (debt:debts, bank_)
+  where bank   = bankIn
         Account (richestPerson, richestBalance) = maximum bank
         Account (poorestPerson, poorestBalance) = minimum bank
         amount = min (abs richestBalance) (abs poorestBalance)
