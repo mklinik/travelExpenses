@@ -9,7 +9,7 @@ import Data.List (sort)
 
 -- configuration: edit here
 
-data Person = Hans | Klaus | Erna | Elke | Peter
+data Person = Hans | Klaus | Erna | Elke | Peter | Maria
     deriving (Show, Eq, Enum, Bounded, Ord)
 
 input =

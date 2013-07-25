@@ -47,6 +47,20 @@ case_minimalExample = Set.fromList expected @=? Set.fromList result
       , Owes Elke  10 Hans
       ]
 
+case_minimalExample2 = Set.fromList expected @=? Set.fromList result
+  where
+    result = processAll
+      [ Hans  `Payed` 10 `for` [Klaus]
+      , Peter `Payed` 10 `for` [Klaus]
+      , Maria `Payed` 22 `for` [Erna, Elke]
+      ]
+    expected =
+      [ Owes Klaus 10 Hans
+      , Owes Klaus 10 Peter
+      , Owes Erna 11 Maria
+      , Owes Elke 11 Maria
+      ]
+
 case_negativeAmount = Set.fromList expected @=? Set.fromList result
   where result = processAll [ (Payed Hans (-30) [Klaus, Erna, Elke]) ]
         expected =
